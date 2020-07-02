@@ -1,0 +1,103 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<canvas id="canvas" style="border:1px solid #000000;">
+</canvas>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<script>
+  c = document.getElementById("canvas");
+  ctx = c.getContext("2d");
+
+  
+  c.width = 800;
+  c.height = 440;
+  var rectangles = [];
+  var offsets = [];
+  var onsets = []
+//  var trans_result = update_values();
+  setInterval(function(){ 
+//    console.log(trans_result);
+
+    $.getJSON("_amt",
+    function(data) {
+//          $("#amt_result").text(data.transcription_result+" %");
+//          console.log(data.transcription_result['on']);
+//        if (data.transcription_result['on'].length > 0){
+//          console.log(data.transcription_result['on'])
+//        }
+        for (i = 0; i < data.on.length; i++) {
+          var rect = [800, (88-data.on[i]) * 5 , 5, 3, data.on[i], 0];
+          rectangles.push(rect)
+          console.log('on loop', i, data.on)
+        }
+        for (i = 0; i < data.off.length; i++) {
+          var off = data.off[i]
+          offsets.push(off)
+        }
+      });
+   }, 16);
+
+  function draw(){
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.save();
+    ctx.beginPath();
+    /*
+    $.getJSON("_amt",
+    function(data) {
+        var i;
+        for (i = 0; i < data.transcription_result['on'].length; i++) {
+          var rect = [800, data.transcription_result['on'][i] * 5 , 5, 3, data.transcription_result['on'][i], 0];
+          rectangles.push(rect)
+        }
+        for (i = 0; i < data.transcription_result['off'].length; i++) {
+          var off = data.transcription_result['off'][i]
+          offsets.push(off)
+        }
+      }); 
+      */
+//    ctx.fillStyle = "white"; // can use solid colour, gradient, or pattern
+//    ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    for (i = 0; i <rectangles.length; i++) {
+      rect = rectangles[i];
+      rect[0] += -4;
+      if (rect[5] == 0 && rect[2] < 200){
+        rect[2] += 4;
+      }
+      ctx.rect(rect[0], rect[1], rect[2], rect[3])
+
+    }
+    for (i = 0; i <offsets.length; i++) {
+      var off = offsets[i];
+      for (j = 0; j<rectangles.length; j++){
+        if (rectangles[j][4] == off && rectangles[j][5] == 0){
+          rectangles[j][5] = 1
+          offsets.splice(i, 1);
+          i -= 1;
+          break
+        }
+      }
+    }
+    offsets = [];
+    for (i = 0; i <rectangles.length; i++) {
+      if (rectangles[i][0] + rectangles[i][2] < 0){
+        rectangles.splice(i, 1);
+        i -= 1;
+      }
+    }
+    ctx.transform(1, 0, 0, -1, 0, canvas.height)
+    
+    ctx.stroke();
+    ctx.fillStyle = "#0095DD";
+    ctx.fill();
+    ctx.restore();
+//    console.log(offsets, rectangles)
+//    ctx.closePath();
+    requestAnimationFrame(draw)
+  }
+  
+  requestAnimationFrame(draw)
+  
+</script>
+
+{% endblock %}
