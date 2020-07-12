@@ -80,21 +80,37 @@ class OnlineTranscriber:
             return onset_pitches, off_pitches
         # return acoustic_out[:,3:4,:].numpy()
 
-def load_model(args):
-    print(args.model_file)
-    model_state_path = args.model_file
-    checkpoint = th.load(model_state_path, map_location='cpu')
-    model_complexity = checkpoint['model_complexity']
-    model_name = checkpoint['model_name']
-    model_class = getattr(models, model_name)
-    recursive = not args.no_recursive
 
-    if model_name == 'ARmodel':
-        model = model_class(229, 88, model_complexity, n_class=args.n_class,
-            recursive=recursive, context_len=args.context_len)
-    if model_name == 'FlexibleModel':
-        model = model_class(229, 88, model_complexity, n_class=args.n_class,
-            ac_model_type=args.ac_model_type, lm_model_type=args.lm_model_type,
-            recursive=recursive, context_len=args.context_len)
-    model.load_state_dict(checkpoint['model_state_dict'])
+def load_model(filename, use_dp=False):
+    parameters = th.load(filename)
+
+    model = OnsetsAndFrames(parameters['input_features'],
+                            parameters['output_features'],
+                            parameters['model_complexity_conv'],
+                            parameters['model_complexity_lstm'],
+                            use_dp)
+
+    model.acoustic_model.load_state_dict(parameters['acoustic'])
+    model.language_model.load_state_dict(parameters['language'])
+    model.language_post.load_state_dict(parameters['post'])
+    model.class_embedding.load_state_dict(parameters['embedding'])
     return model
+
+# def load_model(args):
+#     print(args.model_file)
+#     model_state_path = args.model_file
+#     checkpoint = th.load(model_state_path, map_location='cpu')
+#     model_complexity = checkpoint['model_complexity']
+#     model_name = checkpoint['model_name']
+#     model_class = getattr(models, model_name)
+#     recursive = not args.no_recursive
+
+#     if model_name == 'ARmodel':
+#         model = model_class(229, 88, model_complexity, n_class=args.n_class,
+#             recursive=recursive, context_len=args.context_len)
+#     if model_name == 'FlexibleModel':
+#         model = model_class(229, 88, model_complexity, n_class=args.n_class,
+#             ac_model_type=args.ac_model_type, lm_model_type=args.lm_model_type,
+#             recursive=recursive, context_len=args.context_len)
+#     model.load_state_dict(checkpoint['model_state_dict'])
+#     return model

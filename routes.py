@@ -1,6 +1,6 @@
 from flask import Flask, render_template, jsonify
 import pyaudio
-from transcribe import load_model, transcribe_buffer, OnlineTranscriber
+from transcribe import load_model, OnlineTranscriber
 from mic_stream import MicrophoneStream
 import numpy as np
 from threading import Thread
@@ -14,7 +14,8 @@ Q = queue.Queue()
 @app.route('/')
 def home():
     args = Args()
-    model = load_model(args)
+    # model = load_model(args)
+    model = load_model('/Users/jeongdasaem/Documents/model_weights/model-190000.trm')
     global Q
     t1 = Thread(target=get_buffer_and_transcribe, name=get_buffer_and_transcribe, args=(model, Q))
     t1.start()
