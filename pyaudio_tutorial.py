@@ -26,7 +26,7 @@ WAVE_OUTPUT_FILENAME = "output.wav"
 
 def main(args):
     stream = MicrophoneStream(RATE, CHUNK, CHANNELS)
-    model = load_model(args)
+    model = load_model(args.model_file)
     transcriber = OnlineTranscriber(model, return_roll=False)
 
     piano_roll = np.zeros((88, 32))
@@ -53,7 +53,8 @@ def main(args):
             time_a = time.time()
             # frame_output = transcriber.inference(decoded)
             onset, offset = transcriber.inference(decoded)
-            time.sleep(1)
+            # print(onset)
+            # time.sleep(1)
             # ONSETS += onset
             # print(time.time() - time_a)
             # print(ONSETS)
@@ -79,7 +80,7 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_file', type=str, default='/Users/1112919/Documents/ar_model_weights/model-210000.pt')
+    parser.add_argument('--model_file', type=str, default='/Users/jeongdasaem/Documents/model_weights/model-128000.pt')
     parser.add_argument('--rep_type', default='base')
     parser.add_argument('--n_class', default=5, type=int)
     parser.add_argument('--ac_model_type', default='simple_conv', type=str)

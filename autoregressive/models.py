@@ -128,6 +128,7 @@ class AR_Transcriber(nn.Module):
         )
 
         self.class_embedding = nn.Embedding(5,2)
+        
 
     def forward(self, mel, gt_label=False): # [gt_label: 1x640x88]
         acoustic_out = self.acoustic_model(mel) #[mel: 1x640x229, acoustic_out: 1x640x768]
@@ -155,6 +156,27 @@ class AR_Transcriber(nn.Module):
                 total_result[:,i:i+1,:] = current_out
             
         return total_result #[1, 640, 88, 5]
+
+    def lm_model_step(self, acoustic_out, hidden, prev_out):
+        '''
+        acoustic_out: tensor, shape of (B x T(1) x C)
+        prev_out: tensor, shape of (B x T(1) x pitch)
+        '''
+        # batch_size = acoustic_out.shape[0]
+        # prev_embedded = self.class_embedding(prev_out).view(batch_size, 1, 88*2)  # (B x T x C)
+        # combined_out = torch.cat([prev_embedded, acoustic_out], dim=2)
+        # sequence_out, hidden_out = self.language_model(combined_out, hidden)
+        # fc_out = self.language_post(sequence_out)
+        # fc_out = fc_out.view(batch_size, -1, 88, 5)
+        # return F.softmax(fc_out, dim=3), hidden_out
+        prev_embedding = self.class_embedding(prev_out).view(acoustic_out.shape[0], 1, 88*2)
+        current_data = torch.cat((acoustic_out, prev_embedding), dim=2)
+        current_out, hidden = self.language_model(current_data, hidden)
+        current_out = self.language_post(current_out)
+        current_out = current_out.view((acoustic_out.shape[0], 1, 88, 5))
+        current_out = torch.softmax(current_out, dim=3)
+        return current_out, hidden
+
 
     def init_lstm_hidden(self, batch_size, device):
         h = torch.zeros(2, batch_size, self.language_hidden_size, device=device)
