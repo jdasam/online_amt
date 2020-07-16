@@ -14,6 +14,7 @@ import struct
 import argparse
 from multiprocessing import Process
 from mic_stream import MicrophoneStream
+import rtmidi
 
 CHUNK = 512
 FORMAT = pyaudio.paInt16
@@ -24,7 +25,16 @@ WAVE_OUTPUT_FILENAME = "output.wav"
 
 
 
+
 def main(args):
+    midiout = rtmidi.MidiOut()
+    available_ports = midiout.get_ports()
+    if available_ports:
+        midiout.open_port(0)
+    else:
+        midiout.open_virtual_port("My virtual output")
+
+
     stream = MicrophoneStream(RATE, CHUNK, CHANNELS)
     model = load_model(args.model_file)
     transcriber = OnlineTranscriber(model, return_roll=False)
@@ -47,12 +57,20 @@ def main(args):
         # 마이크 데이터 핸들을 가져옴 
         audio_generator = stream.generator()
         print("* recording")        
-        for i in range(1000):
+        for i in range(5000):
             data = stream._buff.get()
-            decoded = np.frombuffer(data, dtype=np.int16) / 32768
             time_a = time.time()
+            decoded = np.frombuffer(data, dtype=np.int16) / 32768
             # frame_output = transcriber.inference(decoded)
             onset, offset = transcriber.inference(decoded)
+            time_b = time.time()
+            for pitch in onset:
+                note_on = [0x90, pitch + 21, 64]
+                midiout.send_message(note_on)
+            for pitch in offset:
+                note_off = [0x90, pitch + 21, 0]
+                midiout.send_message(note_off)
+            print(time_b-time_a)
             # print(onset)
             # time.sleep(1)
             # ONSETS += onset
