@@ -20,11 +20,17 @@ class OnlineTranscriber:
     def __init__(self, model, return_roll=True):
         self.model = model
         self.model.eval()
+        for i in (0, 3, 8):
+            self.model.acoustic_model.cnn[i].padding = (0,1)
+        for i in (1, 4, 9):
+            self.model.acoustic_model.cnn[i] 
         self.model.melspectrogram = MelSpectrogram(
             N_MELS, SAMPLE_RATE, WINDOW_LENGTH, HOP_LENGTH, mel_fmin=MEL_FMIN, mel_fmax=MEL_FMAX)
         self.model.melspectrogram.stft.padding = False
         self.audio_buffer = th.zeros((1,5120)).to(th.float)
         self.mel_buffer = model.melspectrogram(self.audio_buffer)
+
+        self.acoustic_layer_outputs = self.init_acoustic_layer(self.mel_buffer)
         self.hidden = model.init_lstm_hidden(1, torch.device('cpu'))
         self.prev_output = th.zeros((1,1,88)).to(th.long)
         self.buffer_length = 0
@@ -42,11 +48,14 @@ class OnlineTranscriber:
         # t_audio = F.pad(t_audio, (0, pad_len))
     
     def update_mel_buffer(self):
-        new_mel = th.zeros_like(self.mel_buffer)
-        new_mel[:,:,:6] = self.mel_buffer[:,:,1:7]
-        new_mel[:,:,6:] = self.model.melspectrogram(self.audio_buffer[:, -2048:])
-        self.mel_buffer = new_mel
-        return self.mel_buffer
+        self.mel_buffer[:,:,:6] = self.mel_buffer[:,:,1:7]
+        self.mel_buffer[:,:,6:] = self.model.melspectrogram(self.audio_buffer[:, -2048:])
+        # new_mel = th.zeros_like(self.mel_buffer)
+        # new_mel[:,:,:6] = self.mel_buffer[:,:,1:7]
+        # new_mel[:,:,6:] = self.model.melspectrogram(self.audio_buffer[:, -2048:])
+        # self.mel_buffer = new_mel
+       
+        # return self.mel_buffer
         # new_mel = np.zeros_like(self.mel_buffer)
         # added_audio_samples = self.audio_buffer[:, -2048:]
         # added_mel = self.model.melspectrogram(added_audio_samples)
@@ -57,16 +66,45 @@ class OnlineTranscriber:
 
         # self.mel_buffer = self.model.melspectrogram(self.audio_buffer)
         # return self.mel_buffer
+    
+    def init_acoustic_layer(self, input_mel):
+        x = input_mel.transpose(-1, -2).unsqueeze(1)
+        acoustic_layer_outputs = []
+        for i, layer in enumerate(self.model.acoustic_model.cnn):
+            x = layer(x)
+            if i in [2,7]:
+                acoustic_layer_outputs.append(x)
+        return acoustic_layer_outputs
+
+    def update_acoustic_out(self, mel):
+        x = mel[:,-3:,:].unsqueeze(1)
+        y = mel.unsqueeze(1)
+        layers = self.model.acoustic_model.cnn
+        for i in range(3):
+            x = layers[i](x)
+        self.acoustic_layer_outputs[0][:,:,:-1,:] = self.acoustic_layer_outputs[0][:,:,1:,:]
+        self.acoustic_layer_outputs[0][:,:,-1:,:] = x
+        x = self.acoustic_layer_outputs[0][:,:,-3:,:]
+        for i in range(3,8):
+            x = layers[i](x)
+        self.acoustic_layer_outputs[1][:,:,:-1,:] = self.acoustic_layer_outputs[1][:,:,1:,:]
+        self.acoustic_layer_outputs[1][:,:,-1:,:] = x
+        x = self.acoustic_layer_outputs[1]
+        for i in range(8,13):
+            x = layers[i](x)
+        x = x.transpose(1, 2).flatten(-2)
+        return self.model.acoustic_model.fc(x)
 
     def inference(self, audio):
+        time_list = []
         with th.no_grad():
             self.update_buffer(audio)
-            last_mel = self.update_mel_buffer()
-            acoustic_out = self.model.acoustic_model(last_mel.transpose(-1, -2))
-            language_out, (h,c) = self.model.lm_model_step(acoustic_out[:,3:4,:], self.hidden, self.prev_output)
+            self.update_mel_buffer()
+            # acoustic_out = self.update_acoustic_out(last_mel.transpose(-1, -2))
+            acoustic_out = self.model.acoustic_model(self.mel_buffer.transpose(-1, -2))
+            language_out, self.hidden = self.model.lm_model_step(acoustic_out, self.hidden, self.prev_output)
             # language_out[0,1,0,:] /= 2
             self.prev_output = language_out.argmax(dim=3)
-            self.hidden = (h,c)
             out = self.prev_output[0,0,:].numpy()
         if self.return_roll:
             return (out == 2) + (out == 3)
