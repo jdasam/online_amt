@@ -7,7 +7,6 @@ from torch.autograd import Variable
 
 from .constants import *
 
-
 class STFT(torch.nn.Module):
     """adapted from Prem Seetharaman's https://github.com/pseeth/pytorch-stft"""
     def __init__(self, filter_length, hop_length, win_length=None, window='hann', padding=True):
@@ -52,21 +51,17 @@ class STFT(torch.nn.Module):
                 input_data.unsqueeze(1),
                 (int(self.filter_length / 2), int(self.filter_length / 2), 0, 0),
                 mode='reflect')
-            input_data = input_data.squeeze(1)  
-        forward_transform = F.conv1d(
-            input_data,
-            Variable(self.forward_basis, requires_grad=False),
-            stride=self.hop_length,
-            padding=0)
-
+            input_data = input_data.squeeze(1)
+        forward_transform = torch.conv1d(input_data,self.forward_basis, stride=self.hop_length, padding=0)
         cutoff = int((self.filter_length / 2) + 1)
         real_part = forward_transform[:, :cutoff, :]
         imag_part = forward_transform[:, cutoff:, :]
 
         magnitude = torch.sqrt(real_part**2 + imag_part**2)
-        phase = torch.autograd.Variable(torch.atan2(imag_part.data, real_part.data))
+        return magnitude
+        # phase = torch.autograd.Variable(torch.atan2(imag_part.data, real_part.data))
+        # return magnitude, phase
 
-        return magnitude, phase
 
 
 class MelSpectrogram(torch.nn.Module):
@@ -91,7 +86,8 @@ class MelSpectrogram(torch.nn.Module):
         assert(torch.min(y.data) >= -1)
         assert(torch.max(y.data) <= 1)
 
-        magnitudes, phases = self.stft(y)
+        # magnitudes, phases = self.stft(y)
+        magnitudes = self.stft(y)
         magnitudes = magnitudes.data
         mel_output = torch.matmul(self.mel_basis, magnitudes)
         mel_output = torch.log(torch.clamp(mel_output, min=1e-5))
