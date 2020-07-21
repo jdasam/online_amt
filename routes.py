@@ -16,7 +16,7 @@ Q = queue.Queue()
 def home():
     args = Args()
     # model = load_model(args)
-    model = load_model('/Users/jeongdasaem/Documents/model_weights/model-128000.pt')
+    model = load_model('/Users/1112919/Documents/ar_model_weights/model-40000.pt')
     global Q
     t1 = Thread(target=get_buffer_and_transcribe, name=get_buffer_and_transcribe, args=(model, Q))
     t1.start()
@@ -37,7 +37,7 @@ def amt():
     # return jsonify(transcription_result=result)
 class Args:
     def __init__(self):
-        self.model_file = '/Users/jeongdasaem/Documents/model_weights/model-128000.pt'
+        self.model_file = '/Users/1112919/Documents/ar_model_weights/model-210000.pt'
         self.rep_type = 'base'
         self.n_class = 5
         self.ac_model_type = 'simple_conv'
