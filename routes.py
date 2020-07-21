@@ -65,17 +65,21 @@ def get_buffer_and_transcribe(model, q):
     with MicrophoneStream(RATE, CHUNK, 1) as stream:
         # 마이크 데이터 핸들을 가져옴 
         audio_generator = stream.generator()
-        print("* recording")        
+        print("* recording")
+        on_pitch = []
         while True:
             data = stream._buff.get()
             decoded = np.frombuffer(data, dtype=np.int16) / 32768
             frame_output = transcriber.inference(decoded)
+            on_pitch += frame_output[0]
             for pitch in frame_output[0]:
                 note_on = [0x90, pitch + 21, 64]
                 midiout.send_message(note_on)
             for pitch in  frame_output[1]:
                 note_off = [0x90, pitch + 21, 0]
-                midiout.send_message(note_off)
+                pitch_count = on_pitch.count(pitch)
+                [midiout.send_message(note_off) for i in range(pitch_count)]
+            on_pitch = [x for x in on_pitch if x not in frame_output[1]]
             q.put(frame_output)
             # print(sum(frame_output))
         stream.closed = True
