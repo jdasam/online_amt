@@ -24,8 +24,8 @@ class OnlineTranscriber:
             self.model.acoustic_model.cnn[i].padding = (0,1)
         for i in (1, 4, 9):
             self.model.acoustic_model.cnn[i] 
-        self.model.melspectrogram = MelSpectrogram(
-            N_MELS, SAMPLE_RATE, WINDOW_LENGTH, HOP_LENGTH, mel_fmin=MEL_FMIN, mel_fmax=MEL_FMAX)
+        # self.model.melspectrogram = MelSpectrogram(
+        #     N_MELS, SAMPLE_RATE, WINDOW_LENGTH, HOP_LENGTH, mel_fmin=MEL_FMIN, mel_fmax=MEL_FMAX)
         self.model.melspectrogram.stft.padding = False
         self.audio_buffer = th.zeros((1,5120)).to(th.float)
         self.mel_buffer = model.melspectrogram(self.audio_buffer)
@@ -78,7 +78,6 @@ class OnlineTranscriber:
 
     def update_acoustic_out(self, mel):
         x = mel[:,-3:,:].unsqueeze(1)
-        y = mel.unsqueeze(1)
         layers = self.model.acoustic_model.cnn
         for i in range(3):
             x = layers[i](x)
@@ -94,14 +93,18 @@ class OnlineTranscriber:
             x = layers[i](x)
         x = x.transpose(1, 2).flatten(-2)
         return self.model.acoustic_model.fc(x)
+    
+    def switch_on_or_off(self):
+        pseudo_intensity = torch.max(self.audio_buffer) - torch.min(self.audio_buffer)
+        return
 
     def inference(self, audio):
         time_list = []
         with th.no_grad():
             self.update_buffer(audio)
             self.update_mel_buffer()
-            # acoustic_out = self.update_acoustic_out(last_mel.transpose(-1, -2))
-            acoustic_out = self.model.acoustic_model(self.mel_buffer.transpose(-1, -2))
+            acoustic_out = self.update_acoustic_out(self.mel_buffer.transpose(-1, -2))
+            # acoustic_out = self.model.acoustic_model(self.mel_buffer.transpose(-1, -2))
             language_out, self.hidden = self.model.lm_model_step(acoustic_out, self.hidden, self.prev_output)
             # language_out[0,1,0,:] /= 2
             self.prev_output = language_out.argmax(dim=3)
