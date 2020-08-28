@@ -29,9 +29,10 @@ class OnlineTranscriber:
         self.model.melspectrogram.stft.padding = False
         self.audio_buffer = th.zeros((1,5120)).to(th.float)
         self.mel_buffer = model.melspectrogram(self.audio_buffer)
-
         self.acoustic_layer_outputs = self.init_acoustic_layer(self.mel_buffer)
         self.hidden = model.init_lstm_hidden(1, torch.device('cpu'))
+        # self.hidden = model.init_hidden()
+
         self.prev_output = th.zeros((1,1,88)).to(th.long)
         self.buffer_length = 0
         self.sr = 16000
@@ -106,16 +107,19 @@ class OnlineTranscriber:
             acoustic_out = self.update_acoustic_out(self.mel_buffer.transpose(-1, -2))
             # acoustic_out = self.model.acoustic_model(self.mel_buffer.transpose(-1, -2))
             language_out, self.hidden = self.model.lm_model_step(acoustic_out, self.hidden, self.prev_output)
+            # language_out, self.hidden = self.model.lm_model_step(acoustic_out[:,3:4,:], self.hidden, self.prev_output)
             # language_out[0,1,0,:] /= 2
             self.prev_output = language_out.argmax(dim=3)
+            # self.prev_output = language_out.argmax(dim=1)
+
             out = self.prev_output[0,0,:].numpy()
         if self.return_roll:
             return (out == 2) + (out == 3)
             # return (out==2) +  (out==4)
         else: # return onset and offset only
             out[out==4]=3
+            # out[out==4]=2
             onset_pitches = np.squeeze(np.argwhere(out == 3)).tolist()
-            # print('before', onset_pitches)
             off_pitches = np.squeeze(np.argwhere(out == 1)).tolist()
             if isinstance(onset_pitches, int):
                 onset_pitches = [onset_pitches]
@@ -128,7 +132,7 @@ class OnlineTranscriber:
 
 def load_model(filename):
     parameters = th.load(filename, map_location=th.device('cpu'))
-
+    print(parameters['model_complexity_conv'], parameters['model_complexity_lstm'])
     model = models.AR_Transcriber(229,
                             88,
                             parameters['model_complexity_conv'],
