@@ -8,15 +8,21 @@ import queue
 import json
 import rtmidi
 
+import logging
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
+print('http://127.0.0.1:5000/')
 app = Flask(__name__)
 global Q
 Q = queue.Queue()
 
+
+
 @app.route('/')
 def home():
-    args = Args()
+    # args = Args()
     # model = load_model(args)
-    model = load_model('/Users/jeongdasaem/Documents/model_weights/model-128000.pt')
+    model = load_model('/Users/jeongdasaem/Documents/model_weights/model-180000.pt')
     global Q
     t1 = Thread(target=get_buffer_and_transcribe, name=get_buffer_and_transcribe, args=(model, Q))
     t1.start()
@@ -35,23 +41,21 @@ def amt():
     #     print(results['on'])
     return jsonify(on=onsets, off=offsets)
     # return jsonify(transcription_result=result)
-class Args:
-    def __init__(self):
-        self.model_file = '/Users/jeongdasaem/Documents/model_weights/model-128000.pt'
-        self.rep_type = 'base'
-        self.n_class = 5
-        self.ac_model_type = 'simple_conv'
-        self.lm_model_type = 'lstm'
-        self.context_len = 1
-        self.no_recursive = False        
+# class Args:
+#     def __init__(self):
+#         self.model_file = '/Users/jeongdasaem/Documents/model_weights/model-128000.pt'
+#         self.rep_type = 'base'
+#         self.n_class = 5
+#         self.ac_model_type = 'simple_conv'
+#         self.lm_model_type = 'lstm'
+#         self.context_len = 1
+#         self.no_recursive = False        
 
 def get_buffer_and_transcribe(model, q):
     CHUNK = 512
     FORMAT = pyaudio.paInt16
     CHANNELS = 1
     RATE = 16000
-    RECORD_SECONDS = 4
-    Q = queue.Queue()
 
     midiout = rtmidi.MidiOut()
     available_ports = midiout.get_ports()
