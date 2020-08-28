@@ -103,20 +103,16 @@ class ARmodel(nn.Module):
 
 class AR_Transcriber(nn.Module):
     def __init__(self, input_features, output_features,
-                 model_complexity_conv=48, model_complexity_lstm=48,
-                 use_dp=False):
+                 model_complexity_conv=48, model_complexity_lstm=48):
         super().__init__()
-
-        def _sequence_model(input_size, output_size):
-            return BiLSTM(input_size, output_size // 2)
 
         self.input_features = input_features
         self.output_features = output_features
         self.model_complexity_conv = model_complexity_conv
         self.model_complexity_lstm = model_complexity_lstm
 
-        model_size_conv = 768 #model_complexity_conv * 16
-        model_size_lstm = 768 #model_complexity_lstm * 16
+        model_size_conv = model_complexity_conv * 16
+        model_size_lstm = model_complexity_lstm * 16
         self.language_hidden_size = model_size_lstm
 
         self.acoustic_model = ConvStack(input_features, model_size_conv)
@@ -128,6 +124,8 @@ class AR_Transcriber(nn.Module):
         )
 
         self.class_embedding = nn.Embedding(5,2)
+        self.melspectrogram = MelSpectrogram(
+            N_MELS, SAMPLE_RATE, WINDOW_LENGTH, HOP_LENGTH, mel_fmin=MEL_FMIN, mel_fmax=MEL_FMAX)
         
 
     def forward(self, mel, gt_label=False): # [gt_label: 1x640x88]
