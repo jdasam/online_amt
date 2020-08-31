@@ -1,7 +1,6 @@
 import numpy as np
 import torch.nn.functional as F
-# from torchaudio.functional import spectrogram
-# from torchaudio.transforms import Spectrogram
+import librosa
 from nnAudio import Spectrogram
 from librosa.filters import mel
 from librosa.util import pad_center
@@ -101,9 +100,12 @@ class MelSpectrogram(torch.nn.Module):
 
             # magnitudes, phases = self.stft(y)
             # magnitudes = self.stft(y)
-            magnitudes = nnSTFT(y)
-            # magnitudes = spectrogram(y, pad=0)
-            magnitudes = magnitudes.data
+            # magnitudes = nnSTFT(y)
+            # magnitudes = magnitudes.data
+            
+            magnitudes = np.abs(librosa.core.stft(y.numpy()[0], n_fft=WINDOW_LENGTH, hop_length=HOP_LENGTH, center=False))
+            magnitudes = torch.Tensor(magnitudes).unsqueeze(0)
+
             mel_output = torch.matmul(self.mel_basis, magnitudes)
             mel_output = torch.log(torch.clamp(mel_output, min=1e-5))
             return mel_output
