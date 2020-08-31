@@ -1,11 +1,20 @@
 import numpy as np
 import torch.nn.functional as F
+# from torchaudio.functional import spectrogram
+# from torchaudio.transforms import Spectrogram
+from nnAudio import Spectrogram
 from librosa.filters import mel
 from librosa.util import pad_center
 from scipy.signal import get_window
 from torch.autograd import Variable
+from torch import hann_window
 
 from .constants import *
+from time import time
+
+nnSTFT = Spectrogram.STFT(n_fft=WINDOW_LENGTH, window='hann', sr=SAMPLE_RATE, hop_length=HOP_LENGTH,pad_mode='constant', device='cpu', center=False)
+# nnMel = Spectrogram.MelSpectrogram(sr=SAMPLE_RATE, n_fft=WINDOW_LENGTH, n_mels=N_MELS,hop_length=HOP_LENGTH,center=False, 
+#         power=1,fmin=MEL_FMIN,fmax=MEL_FMAX,device='cpu')
 
 class STFT(torch.nn.Module):
     """adapted from Prem Seetharaman's https://github.com/pseeth/pytorch-stft"""
@@ -69,6 +78,8 @@ class MelSpectrogram(torch.nn.Module):
                  win_length=None, mel_fmin=0.0, mel_fmax=None):
         super(MelSpectrogram, self).__init__()
         self.stft = STFT(filter_length, hop_length, win_length)
+        # self.torchSTFT = torchSTFT
+        # self.stft = spectrogram()
 
         mel_basis = mel(sample_rate, filter_length, n_mels, mel_fmin, mel_fmax, htk=True)
         mel_basis = torch.from_numpy(mel_basis).float()
@@ -85,13 +96,17 @@ class MelSpectrogram(torch.nn.Module):
         """
         assert(torch.min(y.data) >= -1)
         assert(torch.max(y.data) <= 1)
+        with torch.no_grad():
+            # return nnMel(y)
 
-        # magnitudes, phases = self.stft(y)
-        magnitudes = self.stft(y)
-        magnitudes = magnitudes.data
-        mel_output = torch.matmul(self.mel_basis, magnitudes)
-        mel_output = torch.log(torch.clamp(mel_output, min=1e-5))
-        return mel_output
+            # magnitudes, phases = self.stft(y)
+            # magnitudes = self.stft(y)
+            magnitudes = nnSTFT(y)
+            # magnitudes = spectrogram(y, pad=0)
+            magnitudes = magnitudes.data
+            mel_output = torch.matmul(self.mel_basis, magnitudes)
+            mel_output = torch.log(torch.clamp(mel_output, min=1e-5))
+            return mel_output
 
 # the default melspectrogram converter across the project
 # melspectrogram = MelSpectrogram(N_MELS, SAMPLE_RATE, WINDOW_LENGTH, HOP_LENGTH, mel_fmin=MEL_FMIN, mel_fmax=MEL_FMAX)
