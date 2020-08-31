@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 {% block content %}
 
-<canvas id="canvas" style="border:1px solid #000000;">
+<canvas id="canvas" style="border:1px solid #00000000;">
 </canvas>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
@@ -10,8 +10,16 @@
   ctx = c.getContext("2d");
 
   
-  c.width = 800;
-  c.height = 440;
+
+  var width = window.innerWidth;
+  var height = window.innerHeight
+  c.width = window.innerWidth
+  c.height = window.innerHeight
+  var pitch_height = height/88;
+  var height_margin = pitch_height/6;
+  var radius = (pitch_height - height_margin) / 2
+  var speed = 6
+  var max_length = 300
   var rectangles = [];
   var offsets = [];
   var onsets = []
@@ -27,9 +35,10 @@
 //          console.log(data.transcription_result['on'])
 //        }
         for (i = 0; i < data.on.length; i++) {
-          var rect = [800, (88-data.on[i]) * 5 , 5, 3, data.on[i], 0];
+          var rect = [width, (88-data.on[i]) * pitch_height , 4, pitch_height - height_margin, data.on[i], 0];
+          // x pos, y pos, width, hieght, pitch, offset_found
           rectangles.push(rect)
-          console.log('on loop', i, data.on)
+          // console.log('on loop', i, data.on)
         }
         for (i = 0; i < data.off.length; i++) {
           var off = data.off[i]
@@ -58,15 +67,18 @@
       */
 //    ctx.fillStyle = "white"; // can use solid colour, gradient, or pattern
 //    ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
+
+    // update rectangles 
     for (i = 0; i <rectangles.length; i++) {
       rect = rectangles[i];
-      rect[0] += -4;
-      if (rect[5] == 0 && rect[2] < 200){
-        rect[2] += 4;
+      rect[0] += -speed;
+      if (rect[5] == 0 && rect[2] < max_length){
+        rect[2] += speed;
       }
       ctx.rect(rect[0], rect[1], rect[2], rect[3])
-
     }
+
+    // find offset and update rectangle "offset_founded" (rectangles[j][5])
     for (i = 0; i <offsets.length; i++) {
       var off = offsets[i];
       for (j = 0; j<rectangles.length; j++){
@@ -78,18 +90,32 @@
         }
       }
     }
-    offsets = [];
+    // empty the offsets
+    offsets = [];  
+    
+    // delete rectangles that disappeared from the canvas
     for (i = 0; i <rectangles.length; i++) {
       if (rectangles[i][0] + rectangles[i][2] < 0){
         rectangles.splice(i, 1);
         i -= 1;
       }
     }
-    ctx.transform(1, 0, 0, -1, 0, canvas.height)
     
     ctx.stroke();
-    ctx.fillStyle = "#0095DD";
+    ctx.fillStyle = "#ff5708";
     ctx.fill();
+    for (i = 0; i <rectangles.length; i++) {
+      ctx.beginPath();
+      rect = rectangles[i];
+      // ctx.rect(rect[0], rect[1], 8, pitch_height-(height_margin)/2)
+      ctx.arc(rect[0], rect[1]+radius, radius, 0, 2 * Math.PI);
+      ctx.stroke();
+      ctx.fillStyle = "#f5002f";
+      ctx.fill();
+    }
+    
+
+    ctx.transform(1, 0, 0, -1, 0, canvas.height)
     ctx.restore();
 //    console.log(offsets, rectangles)
 //    ctx.closePath();
