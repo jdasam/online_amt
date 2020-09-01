@@ -1,15 +1,15 @@
 {% extends "layout.html" %}
 {% block content %}
 
+<div id='main_container'>
 <canvas id="canvas" style="border:1px solid #00000000;">
 </canvas>
+</div>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
 <script>
   c = document.getElementById("canvas");
-  ctx = c.getContext("2d");
-
-  
+  ctx = c.getContext("2d");    
 
   var width = window.innerWidth;
   var height = window.innerHeight
@@ -17,12 +17,13 @@
   c.height = window.innerHeight
   var pitch_height = height/88;
   var height_margin = pitch_height/6;
-  var radius = (pitch_height - height_margin) / 2
-  var speed = 6
-  var max_length = 300
+  var max_length = window.innerWidth
+
+  var speed = 10
   var rectangles = [];
   var offsets = [];
   var onsets = []
+
 //  var trans_result = update_values();
   setInterval(function(){ 
 //    console.log(trans_result);
@@ -46,27 +47,65 @@
         }
       });
    }, 16);
+  
+  
+  function make_gradient(rect){
+    var gradient = ctx.createLinearGradient(rect[0], rect[1], rect[0] + rect[2], rect[1] + rect[3])
+    if (rect[4]%12 == 0){
+      gradient.addColorStop(0, "#F69799");
+      // gradient.addColorStop(0.1, "#ff5708");
+    }
+    else if(rect[4]%12 == 1){
+      gradient.addColorStop(0, "#6ECFF5");
+    }
+    else if(rect[4]%12 == 2){
+      gradient.addColorStop(0, "#FDC789");
+    }
+    else if(rect[4]%12 == 3){
+      gradient.addColorStop(0, "#8781BD");
+    }
+    else if(rect[4]%12 == 4){
+      gradient.addColorStop(0, "#C4DF9B");
+    }
+    else if(rect[4]%12 == 5){
+      gradient.addColorStop(0, "#F39AC1");
+    }
+    else if(rect[4]%12 == 6){
+      gradient.addColorStop(0, "#7ACCC8");
+    }
+    else if(rect[4]%12 == 7){
+      gradient.addColorStop(0, "#F9AD81");
+    }
+    else if(rect[4]%12 == 8){
+      gradient.addColorStop(0, "#7CA6D8");
+    }
+    else if(rect[4]%12 == 9){
+      gradient.addColorStop(0, "#DAD381");
+    }
+    else if(rect[4]%12 == 10){
+      gradient.addColorStop(0, "#BC8CBF");
+    }
+    else{
+      gradient.addColorStop(0, "#82CA9C");
+      // gradient.addColorStop(0.1, "#ff5708");
+    }
+    gradient.addColorStop(1, "white");
+    return gradient
+  }
+  
 
   function draw(){
+    c = document.getElementById("canvas");
+    ctx = c.getContext("2d");    
+    width = window.innerWidth;
+    height = window.innerHeight
+    c.width = window.innerWidth
+    c.height = window.innerHeight
+    pitch_height = height/88;
+    height_margin = pitch_height/6;
+    max_length = width / 6
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     ctx.save();
-    ctx.beginPath();
-    /*
-    $.getJSON("_amt",
-    function(data) {
-        var i;
-        for (i = 0; i < data.transcription_result['on'].length; i++) {
-          var rect = [800, data.transcription_result['on'][i] * 5 , 5, 3, data.transcription_result['on'][i], 0];
-          rectangles.push(rect)
-        }
-        for (i = 0; i < data.transcription_result['off'].length; i++) {
-          var off = data.transcription_result['off'][i]
-          offsets.push(off)
-        }
-      }); 
-      */
-//    ctx.fillStyle = "white"; // can use solid colour, gradient, or pattern
-//    ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
 
     // update rectangles 
     for (i = 0; i <rectangles.length; i++) {
@@ -75,7 +114,10 @@
       if (rect[5] == 0 && rect[2] < max_length){
         rect[2] += speed;
       }
-      ctx.rect(rect[0], rect[1], rect[2], rect[3])
+      ctx.beginPath();
+      gradient = make_gradient(rect)
+      ctx.fillStyle = gradient
+      ctx.fillRect(rect[0], rect[1], rect[2], rect[3])
     }
 
     // find offset and update rectangle "offset_founded" (rectangles[j][5])
@@ -101,18 +143,16 @@
       }
     }
     
-    ctx.stroke();
-    ctx.fillStyle = "#ff5708";
-    ctx.fill();
-    for (i = 0; i <rectangles.length; i++) {
-      ctx.beginPath();
-      rect = rectangles[i];
-      // ctx.rect(rect[0], rect[1], 8, pitch_height-(height_margin)/2)
-      ctx.arc(rect[0], rect[1]+radius, radius, 0, 2 * Math.PI);
-      ctx.stroke();
-      ctx.fillStyle = "#f5002f";
-      ctx.fill();
-    }
+    // draw circles
+    // for (i = 0; i <rectangles.length; i++) {
+    //   ctx.beginPath();
+    //   rect = rectangles[i];
+    //   // ctx.rect(rect[0], rect[1], 8, pitch_height-(height_margin)/2)
+    //   ctx.arc(rect[0], rect[1]+radius, radius, 0, 2 * Math.PI);
+    //   ctx.stroke();
+    //   ctx.fillStyle = "#f5002f";
+    //   ctx.fill();
+    // }
     
 
     ctx.transform(1, 0, 0, -1, 0, canvas.height)
