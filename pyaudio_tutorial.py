@@ -70,7 +70,6 @@ def main(args):
             for pitch in offset:
                 note_off = [0x90, pitch + 21, 0]
                 midiout.send_message(note_off)
-            print(time_b-time_a)
             # print(onset)
             # time.sleep(1)
             # ONSETS += onset
@@ -98,7 +97,7 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_file', type=str, default='/Users/jeongdasaem/Documents/model_weights/model-128000.pt')
+    parser.add_argument('--model_file', type=str, default='/Users/jeongdasaem/Documents/model_weights/model-180000.pt')
     parser.add_argument('--rep_type', default='base')
     parser.add_argument('--n_class', default=5, type=int)
     parser.add_argument('--ac_model_type', default='simple_conv', type=str)

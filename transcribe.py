@@ -37,6 +37,10 @@ class OnlineTranscriber:
         self.buffer_length = 0
         self.sr = 16000
         self.return_roll = return_roll
+        
+        self.inten_threshold = 0.05
+        self.patience = 100
+        self.num_under_thr = 0
 
     def update_buffer(self, audio):
         # audio = librosa.resample(audio, 44100, 16000)
@@ -97,21 +101,37 @@ class OnlineTranscriber:
     
     def switch_on_or_off(self):
         pseudo_intensity = torch.max(self.audio_buffer) - torch.min(self.audio_buffer)
-        return
+        if pseudo_intensity < self.inten_threshold:
+            self.num_under_thr += 1
+        else:
+            self.num_under_thr = 0
 
     def inference(self, audio):
         time_list = []
         with th.no_grad():
+            time_list.append(time())
             self.update_buffer(audio)
+            time_list.append(time())
+            self.switch_on_or_off()
+            time_list.append(time())
+            if self.num_under_thr > self.patience:
+                return [], []
             self.update_mel_buffer()
+            time_list.append(time())
             acoustic_out = self.update_acoustic_out(self.mel_buffer.transpose(-1, -2))
+            time_list.append(time())
             # acoustic_out = self.model.acoustic_model(self.mel_buffer.transpose(-1, -2))
             language_out, self.hidden = self.model.lm_model_step(acoustic_out, self.hidden, self.prev_output)
             # language_out, self.hidden = self.model.lm_model_step(acoustic_out[:,3:4,:], self.hidden, self.prev_output)
-            # language_out[0,1,0,:] /= 2
+            language_out[0,0,:,3:5] *= 2
+            print(language_out.shape)
             self.prev_output = language_out.argmax(dim=3)
+            time_list.append(time())
             # self.prev_output = language_out.argmax(dim=1)
-
+            print('total: {:.4f}, buffer: {:.4f}, intensity: {:.4f}, mel: {:.4f}, cnn: {:.4f}, rnn: {:.4f}'.format(
+                time_list[5]-time_list[0], time_list[1]-time_list[0], time_list[2]-time_list[1], time_list[3]-time_list[2], time_list[4]-time_list[3],
+                time_list[5]-time_list[4],  
+            ))
             out = self.prev_output[0,0,:].numpy()
         if self.return_roll:
             return (out == 2) + (out == 3)
@@ -132,7 +152,6 @@ class OnlineTranscriber:
 
 def load_model(filename):
     parameters = th.load(filename, map_location=th.device('cpu'))
-    print(parameters['model_complexity_conv'], parameters['model_complexity_lstm'])
     model = models.AR_Transcriber(229,
                             88,
                             parameters['model_complexity_conv'],

@@ -153,7 +153,7 @@ class AR_Transcriber(nn.Module):
                 prev_out = self.class_embedding(current_out).view(mel.shape[0], 1, 88*2)
                 total_result[:,i:i+1,:] = current_out
             
-        return total_result #[1, 640, 88, 5]
+        return total_result
 
     def lm_model_step(self, acoustic_out, hidden, prev_out):
         '''
