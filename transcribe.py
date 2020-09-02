@@ -124,7 +124,6 @@ class OnlineTranscriber:
             language_out, self.hidden = self.model.lm_model_step(acoustic_out, self.hidden, self.prev_output)
             # language_out, self.hidden = self.model.lm_model_step(acoustic_out[:,3:4,:], self.hidden, self.prev_output)
             language_out[0,0,:,3:5] *= 2
-            print(language_out.shape)
             self.prev_output = language_out.argmax(dim=3)
             time_list.append(time())
             # self.prev_output = language_out.argmax(dim=1)

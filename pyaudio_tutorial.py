@@ -18,7 +18,7 @@ import rtmidi
 
 CHUNK = 512
 FORMAT = pyaudio.paInt16
-CHANNELS = 1
+CHANNELS = 2
 RATE = 16000
 RECORD_SECONDS = 4
 WAVE_OUTPUT_FILENAME = "output.wav"
@@ -53,7 +53,7 @@ def main(args):
     fig.canvas.draw()
     ONSETS = []
 
-    with MicrophoneStream(RATE, CHUNK, 1) as stream:
+    with MicrophoneStream(RATE, CHUNK, CHANNELS) as stream:
         # 마이크 데이터 핸들을 가져옴 
         audio_generator = stream.generator()
         print("* recording")        
@@ -61,6 +61,9 @@ def main(args):
             data = stream._buff.get()
             time_a = time.time()
             decoded = np.frombuffer(data, dtype=np.int16) / 32768
+            if CHANNELS == 2:
+                decoded = decoded.reshape(CHANNELS, -1)
+                decoded = np.mean(decoded, axis=0)
             # frame_output = transcriber.inference(decoded)
             onset, offset = transcriber.inference(decoded)
             time_b = time.time()
@@ -70,7 +73,7 @@ def main(args):
             for pitch in offset:
                 note_off = [0x90, pitch + 21, 0]
                 midiout.send_message(note_off)
-            # print(onset)
+            print(onset)
             # time.sleep(1)
             # ONSETS += onset
             # print(time.time() - time_a)

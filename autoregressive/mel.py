@@ -1,7 +1,7 @@
 import numpy as np
 import torch.nn.functional as F
 import librosa
-from nnAudio import Spectrogram
+# from nnAudio import Spectrogram
 from librosa.filters import mel
 from librosa.util import pad_center
 from scipy.signal import get_window
@@ -11,7 +11,7 @@ from torch import hann_window
 from .constants import *
 from time import time
 
-nnSTFT = Spectrogram.STFT(n_fft=WINDOW_LENGTH, window='hann', sr=SAMPLE_RATE, hop_length=HOP_LENGTH,pad_mode='constant', device='cpu', center=False)
+# nnSTFT = Spectrogram.STFT(n_fft=WINDOW_LENGTH, window='hann', sr=SAMPLE_RATE, hop_length=HOP_LENGTH,pad_mode='constant', device='cpu', center=False)
 # nnMel = Spectrogram.MelSpectrogram(sr=SAMPLE_RATE, n_fft=WINDOW_LENGTH, n_mels=N_MELS,hop_length=HOP_LENGTH,center=False, 
 #         power=1,fmin=MEL_FMIN,fmax=MEL_FMAX,device='cpu')
 
