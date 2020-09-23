@@ -4,13 +4,9 @@ import matplotlib
 from matplotlib.animation import FuncAnimation
 matplotlib.use('Qt5Agg')
 import pyaudio
-import wave
-import librosa
-import librosa.display
 import numpy as np
 import matplotlib.pyplot as plt
 import time
-import struct
 import argparse
 import queue
 from mic_stream import MicrophoneStream
@@ -102,7 +98,7 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_file', type=str, default='/Users/jeongdasaem/Documents/model_weights/model-128000.pt')
+    parser.add_argument('--model_file', type=str, default='model-180000.pt')
     parser.add_argument('--rep_type', default='base')
     parser.add_argument('--n_class', default=5, type=int)
     parser.add_argument('--ac_model_type', default='simple_conv', type=str)
