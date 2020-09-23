@@ -53,7 +53,7 @@ def amt():
 def get_buffer_and_transcribe(model, q):
     CHUNK = 512
     FORMAT = pyaudio.paInt16
-    CHANNELS = 2
+    CHANNELS = 1
     RATE = 16000
 
     midiout = rtmidi.MidiOut()
