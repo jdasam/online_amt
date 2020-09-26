@@ -19,4 +19,12 @@ Requirements
 
 Usage
 -----
+#### With a web browser visualization
+
 ```$ python run_on_web.py ```
+
+Then, open http://127.0.0.1:5000/ with your browser.
+After the page is opened, the AMT model will automatically run until a keyboard interrupt.
+
+#### With a matplotlib visualization
+```$ python run_on_plt.py ```
