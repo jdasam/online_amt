@@ -1,6 +1,7 @@
 Real-time Automatic Piano Transcription System
 =======
 
+![Screen shot](https://github.com/jdasam/jdasam.github.io/blob/gh-pages/assets/images/online_amt.png?raw=true)
 This is the code for our Real-time Automatic Piano Transcription System, which was presented in SK Telecom Tech Gallery in Pangyo, Korea.
 The documentation is currently on working.
 
