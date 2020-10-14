@@ -20,6 +20,12 @@ Requirements
 - torch==1.6.0
 - rtmidi==2.3.4
 
+Pre-trained Model
+-----
+The pre-trained model for AMT is uploaded with Git-LFS. If you are not familiar with Git-LFS, you can download it from [here](https://drive.google.com/file/d/12DnYJJ6YKpsoEkXI9fYUTTd4wOeY_rlB/view?usp=sharing).
+
+The model was trained with [MAESTRO v.2.0.0](https://magenta.tensorflow.org/datasets/maestro) based on the code by [Jongwook Kim](https://github.com/jongwook/onsets-and-frames)
+
 
 Usage
 -----
