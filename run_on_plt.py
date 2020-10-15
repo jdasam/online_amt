@@ -1,11 +1,9 @@
 from transcribe import load_model, OnlineTranscriber
-
 import matplotlib
-from matplotlib.animation import FuncAnimation
 matplotlib.use('Qt5Agg')
+import matplotlib.pyplot as plt
 import pyaudio
 import numpy as np
-import matplotlib.pyplot as plt
 import time
 import argparse
 import queue
@@ -14,20 +12,8 @@ from threading import Thread
 
 CHUNK = 512
 FORMAT = pyaudio.paInt16
-CHANNELS = 1
+CHANNELS = pyaudio.PyAudio().get_default_input_device_info()['maxInputChannels']
 RATE = 16000
-RECORD_SECONDS = 4
-WAVE_OUTPUT_FILENAME = "output.wav"
-
-
-# def prepare_stream_model():
-#     model = load_model(args)
-#     transcriber = OnlineTranscriber(model)
-#     piano_roll = np.zeros((88, 32))
-#     piano_roll[30, 0] = 1 # for test
-    
-#     plt.ion()
-#     fig, ax = plt.subplots()
 
 def get_buffer_and_transcribe(model, q):
     transcriber = OnlineTranscriber(model)
@@ -36,13 +22,11 @@ def get_buffer_and_transcribe(model, q):
         while True:
             data = stream._buff.get()
             decoded = np.frombuffer(data, dtype=np.int16) / 32768
+            if CHANNELS > 1:
+                decoded = decoded.reshape(CHANNELS, -1)
+                decoded = np.mean(decoded, axis=0)
             frame_output = transcriber.inference(decoded)
             q.put(frame_output)
-            # new_roll = np.zeros_like(piano_roll)
-            # new_roll[:, :-1] = piano_roll[:,1:]
-            # new_roll[:, -1] = frame_output
-            # piano_roll = new_roll
-        # return piano_roll, transcriber
 
 def draw_plot(q):
     piano_roll = np.zeros((88, 64 ))
@@ -80,31 +64,20 @@ def draw_plot(q):
         fig.canvas.flush_events()
         time.sleep(0.02)
 
-def main(args):
-    model = load_model(args.model_file)
+def main(model_file):
+    model = load_model(model_file)
     
-    # 마이크 데이터 핸들을 가져옴 
     q = queue.Queue()
     print("* recording")
     t1 = Thread(target=get_buffer_and_transcribe, name=get_buffer_and_transcribe, args=(model, q))
     t1.start()
+    # print('model is running')
     draw_plot(q)
-    # t2 = Thread(target=draw_plot, name=draw_plot, args=(fig, img, ax,ax_background, piano_roll))
-    # t2.start()
-    print("* done recording")
-
-
-    # librosa.output.write_wav('lib_out.wav', np.concatenate(entire_frames), sr=44100)
+    # print("* done recording")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_file', type=str, default='model-180000.pt')
-    parser.add_argument('--rep_type', default='base')
-    parser.add_argument('--n_class', default=5, type=int)
-    parser.add_argument('--ac_model_type', default='simple_conv', type=str)
-    parser.add_argument('--lm_model_type', default='lstm', type=str)
-    parser.add_argument('--context_len', default=1, type=int)
-    parser.add_argument('--no_recursive', action='store_true')
     args = parser.parse_args()
 
-    main(args)
+    main(args.model_file)

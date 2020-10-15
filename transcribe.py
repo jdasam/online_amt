@@ -43,34 +43,16 @@ class OnlineTranscriber:
         self.num_under_thr = 0
 
     def update_buffer(self, audio):
-        # audio = librosa.resample(audio, 44100, 16000)
         t_audio = th.tensor(audio).to(th.float)
         new_buffer = th.zeros_like(self.audio_buffer)
         new_buffer[0, :-len(t_audio)] = self.audio_buffer[0, len(t_audio):]
         new_buffer[0, -len(t_audio):] = t_audio
         self.audio_buffer = new_buffer
-        # pad_len = math.ceil(len(t_audio) / 512) * 512 - len(t_audio)
-        # t_audio = F.pad(t_audio, (0, pad_len))
-    
+
     def update_mel_buffer(self):
         self.mel_buffer[:,:,:6] = self.mel_buffer[:,:,1:7]
         self.mel_buffer[:,:,6:] = self.model.melspectrogram(self.audio_buffer[:, -2048:])
-        # new_mel = th.zeros_like(self.mel_buffer)
-        # new_mel[:,:,:6] = self.mel_buffer[:,:,1:7]
-        # new_mel[:,:,6:] = self.model.melspectrogram(self.audio_buffer[:, -2048:])
-        # self.mel_buffer = new_mel
-       
-        # return self.mel_buffer
-        # new_mel = np.zeros_like(self.mel_buffer)
-        # added_audio_samples = self.audio_buffer[:, -2048:]
-        # added_mel = self.model.melspectrogram(added_audio_samples)
-        # new_mel[:,:,:-1] = self.mel_buffer[:,:,1:]
-        # new_mel[:,:,-1:] = added_mel
-        # self.mel_buffer = new_mel
-        # return added_mel
 
-        # self.mel_buffer = self.model.melspectrogram(self.audio_buffer)
-        # return self.mel_buffer
     
     def init_acoustic_layer(self, input_mel):
         x = input_mel.transpose(-1, -2).unsqueeze(1)
@@ -107,30 +89,30 @@ class OnlineTranscriber:
             self.num_under_thr = 0
 
     def inference(self, audio):
-        time_list = []
+        # time_list = []
         with th.no_grad():
-            time_list.append(time())
+            # time_list.append(time())
             self.update_buffer(audio)
-            time_list.append(time())
+            # time_list.append(time())
             self.switch_on_or_off()
-            time_list.append(time())
+            # time_list.append(time())
             if self.num_under_thr > self.patience:
                 return [], []
             self.update_mel_buffer()
-            time_list.append(time())
+            # time_list.append(time())
             acoustic_out = self.update_acoustic_out(self.mel_buffer.transpose(-1, -2))
-            time_list.append(time())
+            # time_list.append(time())
             # acoustic_out = self.model.acoustic_model(self.mel_buffer.transpose(-1, -2))
             language_out, self.hidden = self.model.lm_model_step(acoustic_out, self.hidden, self.prev_output)
             # language_out, self.hidden = self.model.lm_model_step(acoustic_out[:,3:4,:], self.hidden, self.prev_output)
             language_out[0,0,:,3:5] *= 2
             self.prev_output = language_out.argmax(dim=3)
-            time_list.append(time())
+            # time_list.append(time())
             # self.prev_output = language_out.argmax(dim=1)
-            print('total: {:.4f}, buffer: {:.4f}, intensity: {:.4f}, mel: {:.4f}, cnn: {:.4f}, rnn: {:.4f}'.format(
-                time_list[5]-time_list[0], time_list[1]-time_list[0], time_list[2]-time_list[1], time_list[3]-time_list[2], time_list[4]-time_list[3],
-                time_list[5]-time_list[4],  
-            ))
+            # print('total: {:.4f}, buffer: {:.4f}, intensity: {:.4f}, mel: {:.4f}, cnn: {:.4f}, rnn: {:.4f}'.format(
+            #     time_list[5]-time_list[0], time_list[1]-time_list[0], time_list[2]-time_list[1], time_list[3]-time_list[2], time_list[4]-time_list[3],
+            #     time_list[5]-time_list[4],  
+            # ))
             out = self.prev_output[0,0,:].numpy()
         if self.return_roll:
             return (out == 2) + (out == 3)
@@ -158,22 +140,3 @@ def load_model(filename):
 
     model.load_state_dict(parameters['model_state_dict'])
     return model
-
-# def load_model(args):
-#     print(args.model_file)
-#     model_state_path = args.model_file
-#     checkpoint = th.load(model_state_path, map_location='cpu')
-#     model_complexity = checkpoint['model_complexity']
-#     model_name = checkpoint['model_name']
-#     model_class = getattr(models, model_name)
-#     recursive = not args.no_recursive
-
-#     if model_name == 'ARmodel':
-#         model = model_class(229, 88, model_complexity, n_class=args.n_class,
-#             recursive=recursive, context_len=args.context_len)
-#     if model_name == 'FlexibleModel':
-#         model = model_class(229, 88, model_complexity, n_class=args.n_class,
-#             ac_model_type=args.ac_model_type, lm_model_type=args.lm_model_type,
-#             recursive=recursive, context_len=args.context_len)
-#     model.load_state_dict(checkpoint['model_state_dict'])
-#     return model
