@@ -10,7 +10,6 @@ The system is based on the AMT model based on [Polyphonic Piano Transcription Us
 
 Requirements
 ------
-- python_rtmidi==1.1.2
 - Flask==1.1.2
 - scipy==1.4.1
 - numpy==1.16.2
@@ -19,6 +18,8 @@ Requirements
 - matplotlib==3.1.1
 - torch==1.6.0
 - rtmidi==2.3.4
+- python_rtmidi==1.1.2
+- numba==0.48
 
 Pre-trained Model
 -----
