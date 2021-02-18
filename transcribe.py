@@ -97,7 +97,10 @@ class OnlineTranscriber:
             self.switch_on_or_off()
             # time_list.append(time())
             if self.num_under_thr > self.patience:
-                return [], []
+                if self.return_roll:
+                    return [0]*88
+                else:
+                    return [], []
             self.update_mel_buffer()
             # time_list.append(time())
             acoustic_out = self.update_acoustic_out(self.mel_buffer.transpose(-1, -2))
