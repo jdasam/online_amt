@@ -1,18 +1,13 @@
 from transcribe import load_model, OnlineTranscriber
 
 import matplotlib
-from matplotlib.animation import FuncAnimation
 matplotlib.use('Qt5Agg')
 import pyaudio
-import wave
-import librosa
 import librosa.display
 import numpy as np
 import matplotlib.pyplot as plt
 import time
-import struct
 import argparse
-from multiprocessing import Process
 from mic_stream import MicrophoneStream
 import rtmidi
 
@@ -22,8 +17,6 @@ CHANNELS = 2
 RATE = 16000
 RECORD_SECONDS = 4
 WAVE_OUTPUT_FILENAME = "output.wav"
-
-
 
 
 def main(args):
@@ -74,24 +67,6 @@ def main(args):
                 note_off = [0x90, pitch + 21, 0]
                 midiout.send_message(note_off)
             print(onset)
-            # time.sleep(1)
-            # ONSETS += onset
-            # print(time.time() - time_a)
-            # print(ONSETS)
-            # print(frame_output)
-            # new_roll = np.zeros_like(piano_roll)
-            # new_roll[:, :-1] = piano_roll[:,1:]
-            # new_roll[:, -1] = frame_output
-            # piano_roll = new_roll
-
-            # # time_b = time.time()
-            # # fig.canvas.restore_region(ax_background)
-            # # img.set_data(piano_roll)
-            # # ax.draw_artist(img)
-            # # fig.canvas.blit(ax.bbox)
-            # # fig.canvas.flush_events()
-            # # time_c = time.time()
-            # print(time_c-time_b, time_b-time_a)
         stream.closed = True
     print("* done recording")
 
